@@ -4,6 +4,7 @@ library(readr)
 library(readxl)
 library(tidyverse)
 
+# NOTA: Las rutas de los archivos son locales y deben ajustarse según el entorno del usuario
 # Abrir csv de otros delitos
 otrosdel <- read_delim("/Users/guillelore/Desktop/Scripts R/Trabajo Final R/otros-delitos.csv", delim = ";")
 # Abrir xlsx de homicidios
@@ -32,10 +33,12 @@ homicidios <- homicidios %>%
 
 delitos <- bind_rows(homicidios, rapinas, v_domestica) # Uno los objetos de cada uno de los delitos
 
+# Se completan combinaciones faltantes de depto/delito/año para evitar que años sin casos queden ausentes en vez de figurar como 0
 delitos <- delitos %>% # Completo años faltantes por no tener casos
   complete(DEPTO, DELITO, AÑO = full_seq(AÑO, 1),
            fill = list(casos = 0))
 
+# e distinguen filas reales de filas generadas por complete(), usando la presencia de MES como indicador de registro original
 delitos <- delitos %>% # Diferenciacion de filas de casos reales de filas por años sin casos
   mutate(casos_reales = ifelse(is.na(MES), NA, 1))
 
@@ -44,13 +47,14 @@ del_por_depyano <- delitos %>% # Agrupo los delitos por año y departamento para
   filter(AÑO <= 2024) %>%
   summarise(casos = sum(casos_reales, na.rm = TRUE))
 
-# Calculo de variación anual
+# Variación anual por departamento y delito: permite identificar fluctuaciones territoriales específicas
 var_dep_del <- del_por_depyano %>% # Variacion anual de cada delito por depto 
   group_by(DEPTO, DELITO) %>%
   arrange(DELITO) %>%
   mutate(variacion_anual = (casos - lag(casos))/lag(casos) * 100)
 
-variacion_interdepto <- del_por_depyano %>% # Variacion interdepartamental promedio por año (idea y código originado por ChatGPT)
+# Coeficiente de variación interdepartamental por año: mide qué tan desigual es la distribución entre departamentos en cada período (código originado por ChatGPT)
+variacion_interdepto <- del_por_depyano %>% 
   group_by(AÑO, DELITO) %>%
   summarise(media = mean(casos, na.rm = TRUE),desv = sd(casos, na.rm = TRUE),coef_var = (desv / media) * 100)
 
@@ -81,6 +85,7 @@ pobl <- read_excel("/Users/guillelore/Desktop/Scripts R/Trabajo Final R/pobl dep
 # Fuente: Instituto Nacional de Estadística
 # https://www.gub.uy/instituto-nacional-estadistica/estimaciones_proyecciones
 
+# Se transforma la tabla de población de formato ancho a largo para poder unirla con el objeto de delitos por departamento y año
 pobl_largo <- pobl %>% # Paso el objeto de poblacion a formato largo para poder combinarla con otros objetos
   pivot_longer(cols = "2013.0":"2024.0",
                names_to = "AÑO",
@@ -132,12 +137,13 @@ mapa_tasas <- mapa_uy %>% # Union de objetos para graficar
 ggplot(var_nac_del, aes(x = AÑO, y = casos_totales, color = DELITO)) + # Grafico de lineas de la evolucion a nivel nacional de los 3 delitos.
   geom_line() +
   geom_point(size = 2) +
-  scale_y_log10() +
+  scale_y_log10() + # Escala logaritmica para no perder detalle de la evolucion de los homicidios a pesar de su inferioridad en valores absolutos.
   labs(title = "Evolución nacional de los delitos violentos (2013–2024)",
        x = "Año",
        y = "Cantidad de casos",
        color = "Delito")
 
+# Mapas coropléticos por departamento: la escala de cada mapa va de 0 al máximo del delito correspondiente para maximizar el contraste visual dentro de cada tipo de delito
 # Gráfico 2. Evolución de las tasas de homicidios dolosos (2013–2024)
 ggplot(mapa_tasas %>% filter(AÑO == 2024, DELITO == "HOMICIDIO")) + 
   geom_sf(aes(fill = tasa_100000), color = "black", size = 0.2) +
@@ -157,7 +163,7 @@ ggplot(mapa_tasas %>% filter(AÑO == 2024, DELITO == "VIOLENCIA DOMÉSTICA")) +
 # Gráfico 4. Evolución de las tasas de rapiñas (2013–2024)
 ggplot(mapa_tasas %>% filter(AÑO == 2024, DELITO == "RAPIÑA")) + 
   geom_sf(aes(fill = tasa_100000), color = "black", size = 0.2) +
-  scale_fill_gradient(limits = c(0, max(subset(mapa_tasas, DELITO == "VIOLENCIA DOMÉSTICA")$tasa_100000)), low = "white", high = "blue", name = "Tasa por 100.000 hab.") +
+  scale_fill_gradient(limits = c(0, max(subset(mapa_tasas, DELITO == "RAPIÑA")$tasa_100000)), low = "white", high = "blue", name = "Tasa por 100.000 hab.") +
   labs(title = "Tasa de Rapiñas por Departamento (2024)",
        caption = "Fuente: elaboración propia con base en datos del MI e INE") +
   theme_minimal()
