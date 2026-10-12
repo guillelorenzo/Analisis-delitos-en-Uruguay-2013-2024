@@ -68,6 +68,10 @@ El script realiza las siguientes etapas:
 
 > Cada mapa puede generarse para cualquier año del período modificando el filtro `filter(AÑO == 20xx, ...)` en el script.
 
+**Ejemplo: mapa de la tasa de homicidios por departamento (2023)**
+
+   <img src="./gifs%3A/om23.png" alt="Mapa de la tasa de homicidios por departamento, 2023" width="600">
+
 ---
 
 ## Cómo ejecutar el script
