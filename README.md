@@ -2,7 +2,7 @@
 
 Este repositorio contiene un script en R con el objetivo de realizar un análisis descriptivo y territorial de la evolución de homicidios, rapiñas y violencia doméstica en Uruguay entre 2013 y 2024, utilizando datos oficiales del Ministerio del Interior y del Instituto Nacional de Estadística.
 
-![Evolución nacional de los delitos](./gifs%3A/grafico%20nacional%20gral.png)
+   <img src="./gifs%3A/grafico%20nacional%20gral.png" alt="Evolución nacional de los delitos" width="600">
 
 ---
 
